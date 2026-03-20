@@ -14,12 +14,14 @@
 		"enabled": true
 	},
 	"ai": {
-		"binding": "AI"
+		"binding": "AI",
+		"remote": true
 	},
 	"vectorize": [
 		{
 			"binding": "VECTORIZE",
-			"index_name": "bub-chat-summaries"
+			"index_name": "bub-chat-summaries",
+			"remote": true
 		}
 	]
 	/**
