@@ -5,6 +5,7 @@ node_modules/
 dist/
 .output/
 .vinxi/
+.vite/
 
 # Environment variables
 .env
