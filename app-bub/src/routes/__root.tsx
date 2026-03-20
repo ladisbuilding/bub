@@ -1,8 +1,12 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
+import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
+import { getCurrentUser } from '../server/auth'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
+  beforeLoad: async () => {
+    const user = await getCurrentUser()
+    return { user }
+  },
   head: () => ({
     meta: [
       {
@@ -23,8 +27,13 @@ export const Route = createRootRoute({
       },
     ],
   }),
+  component: RootComponent,
   shellComponent: RootDocument,
 })
+
+function RootComponent() {
+  return <Outlet />
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
@@ -32,7 +41,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-screen flex flex-col bg-slate-900">
         {children}
         <Scripts />
       </body>
