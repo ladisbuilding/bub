@@ -2,7 +2,8 @@ import { getCookie } from '@tanstack/react-start/server'
 
 async function getJwtSecret() {
   const { env } = await import('cloudflare:workers')
-  return (env as any).JWT_SECRET as string
+  const isDev = (env as any).DEV === 'true'
+  return (isDev ? (env as any).DEV_JWT_SECRET : (env as any).PROD_JWT_SECRET) as string
 }
 
 export async function createToken(payload: { id: string; email: string }): Promise<string> {

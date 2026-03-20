@@ -11,7 +11,10 @@
 		"preview": "npm run build && vite preview",
 		"test": "vitest run",
 		"deploy": "npm run build && wrangler deploy",
-		"cf-typegen": "wrangler types"
+		"cf-typegen": "wrangler types",
+		"secrets:update": "../scripts/push-secrets.sh",
+		"db:push": "drizzle-kit push",
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
 		"@cloudflare/vite-plugin": "^1.13.8",
