@@ -6,7 +6,7 @@ import { requireAuth } from './auth-helpers'
 import { shouldRetrieveContext, retrieveContextInternal, generateSummaryInternal } from './memory'
 import { createProject } from './projects'
 import { detectIntent } from './intent'
-import { addComponent, editComponent, removeComponent, renameProject, getPageComponents } from './page-editor'
+import { addComponent, editComponent, removeComponent, resetComponent, renameProject, getPageComponents } from './page-editor'
 
 interface Message {
   role: 'system' | 'user' | 'assistant'
@@ -291,6 +291,12 @@ export const sendMessage = createServerFn({ method: 'POST' })
       try {
         await removeComponent(activeProject.id, intentResult.targetComponent)
         actionTaken = `Removed ${intentResult.targetComponent} component`
+        navigateTo = `/site/${activeProject.id}`
+      } catch {}
+    } else if (intentResult.action === 'reset_component' && activeProject && intentResult.targetComponent) {
+      try {
+        await resetComponent(activeProject.id, intentResult.targetComponent, activeProject.name)
+        actionTaken = `Reset ${intentResult.targetComponent} to defaults`
         navigateTo = `/site/${activeProject.id}`
       } catch {}
     }

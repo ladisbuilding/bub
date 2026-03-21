@@ -130,3 +130,51 @@ export const getProject = createServerFn({ method: 'GET' })
 
     return project
   })
+
+export const publishProject = createServerFn({ method: 'POST' })
+  .inputValidator((data: { projectId: string }) => {
+    if (!data.projectId) throw new Error('Project ID required')
+    return data
+  })
+  .handler(async ({ data }) => {
+    const authedUser = await requireAuth()
+    const database = await db()
+
+    const [project] = await database
+      .select()
+      .from(projects)
+      .where(eq(projects.id, data.projectId))
+
+    if (!project || project.userId !== authedUser.id) throw new Error('Project not found')
+
+    // Set status to published
+    await database.update(projects).set({
+      status: 'published',
+      updatedAt: new Date(),
+    }).where(eq(projects.id, data.projectId))
+
+    // Set up custom domain via Cloudflare Workers API
+    try {
+      const { env } = await import('cloudflare:workers')
+      const cfToken = (env as any).CF_API_TOKEN
+      const cfAccountId = (env as any).CF_ACCOUNT_ID
+      if (cfToken && cfAccountId) {
+        await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/workers/domains`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${cfToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            hostname: `${project.slug}.bub.ai`,
+            service: 'app-bub',
+            environment: 'production',
+          }),
+        })
+      }
+    } catch {
+      // Domain setup failed — site is still published, just not on custom subdomain yet
+    }
+
+    return { slug: project.slug, url: `https://${project.slug}.bub.ai` }
+  })

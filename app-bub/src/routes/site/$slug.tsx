@@ -44,13 +44,22 @@ function HeroComponent({ props }: { props: any }) {
     <div
       className="flex flex-col items-center justify-center text-center px-6"
       style={{
-        backgroundColor: style.bgColor || '#ffffff',
+        backgroundColor: style.bgColor || '#f3f4f6',
         color: style.textColor || '#000000',
-        minHeight: style.height || '100vh',
+        minHeight: style.height || '33vh',
       }}
     >
       <h1 className="text-5xl font-bold">{props.title || ''}</h1>
       {props.subtitle && <p className="text-xl mt-4 opacity-70">{props.subtitle}</p>}
+      {props.buttonText && (
+        <a
+          href={props.buttonUrl || '#'}
+          className="inline-block mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-500 transition-colors"
+          style={props.buttonColor ? { backgroundColor: props.buttonColor } : undefined}
+        >
+          {props.buttonText}
+        </a>
+      )}
     </div>
   )
 }
@@ -60,7 +69,7 @@ function TextBlockComponent({ props }: { props: any }) {
   return (
     <div
       className="max-w-3xl mx-auto px-6 py-12"
-      style={{ backgroundColor: style.bgColor, color: style.textColor }}
+      style={{ backgroundColor: style.bgColor || '#ffffff', color: style.textColor || '#000000' }}
     >
       {props.heading && <h2 className="text-3xl font-bold mb-4">{props.heading}</h2>}
       {props.body && <p className="text-lg leading-relaxed">{props.body}</p>}
@@ -89,7 +98,7 @@ function EmbedComponent({ props }: { props: any }) {
 
   return (
     <div
-      className="mx-auto px-6 py-8"
+      className="mx-auto px-6 py-8 bg-white"
       style={{ maxWidth: style.maxWidth || '600px' }}
     >
       <iframe
@@ -107,7 +116,7 @@ function CtaComponent({ props }: { props: any }) {
   const style = props.style || {}
   return (
     <div
-      className="text-center px-6 py-16"
+      className="text-center px-6 py-24"
       style={{ backgroundColor: style.bgColor || '#f3f4f6', color: style.textColor || '#000000' }}
     >
       <h2 className="text-3xl font-bold mb-2">{props.title || ''}</h2>

@@ -9,6 +9,7 @@ export const users = pgTable('users', {
   aiProvider: text('ai_provider'),
   aiModel: text('ai_model'),
   aiApiKey: text('ai_api_key'),
+  role: text('role').notNull().default('user'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

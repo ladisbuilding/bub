@@ -1,5 +1,5 @@
 export interface IntentResult {
-  action: 'none' | 'create_project' | 'navigate_site' | 'navigate_project' | 'rename_project' | 'add_component' | 'edit_component' | 'remove_component'
+  action: 'none' | 'create_project' | 'navigate_site' | 'navigate_project' | 'rename_project' | 'add_component' | 'edit_component' | 'remove_component' | 'reset_component'
   projectName?: string
   projectDescription?: string
   newName?: string
@@ -46,10 +46,11 @@ Possible intents:
 - {"action":"add_component","componentType":"...","componentProps":{...}} — user wants to add something to the site (embed, section, text, etc.)
 - {"action":"edit_component","targetComponent":"...","changes":{...}} — user wants to change an existing component (color, text, style)
 - {"action":"remove_component","targetComponent":"..."} — user wants to remove a component
+- {"action":"reset_component","targetComponent":"..."} — user wants to reset a component to its defaults
 - {"action":"none"} — anything else (questions, general chat)
 
 Available component types for add_component:
-- hero: title, subtitle, style (bgColor, textColor, height)
+- hero: title, subtitle, buttonText, buttonUrl, buttonColor, style (bgColor, textColor, height)
 - text-block: heading, body, style
 - embed: provider (spotify, youtube), url, style
 - cta: title, subtitle, buttonText, buttonUrl, style
@@ -64,7 +65,9 @@ Rules:
 - "rename it to X", "call it X instead" → rename_project
 - "add a spotify player", "put a music player on the site" → add_component with type embed
 - "make the footer blue", "change the background" → edit_component
+- "add a button to the hero" → edit_component with targetComponent "hero" and changes {buttonText, buttonUrl}
 - "remove the hero", "delete the footer" → remove_component
+- "reset the hero", "reset hero to defaults" → reset_component
 - For add_component, infer componentType and reasonable default props
 - For edit_component, identify which component and what changes
 - If unsure, return {"action":"none"}`,

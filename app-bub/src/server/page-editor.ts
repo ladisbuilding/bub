@@ -78,6 +78,31 @@ export async function removeComponent(projectId: string, targetType: string): Pr
   return filtered
 }
 
+const COMPONENT_DEFAULTS: Record<string, Record<string, any>> = {
+  hero: { title: '', subtitle: '', buttonText: '', buttonUrl: '', buttonColor: '', style: {} },
+  'text-block': { heading: '', body: '', style: {} },
+  embed: { provider: '', url: '', style: {} },
+  cta: { title: '', subtitle: '', buttonText: '', buttonUrl: '', style: {} },
+  footer: { text: '', style: {} },
+}
+
+export async function resetComponent(projectId: string, targetType: string, projectName?: string): Promise<Component[]> {
+  const { itemId, components } = await getPageComponents(projectId)
+  if (!itemId) throw new Error('No homepage found')
+
+  const idx = components.findIndex((c) => c.type === targetType)
+  if (idx === -1) throw new Error(`Component "${targetType}" not found`)
+
+  const defaults = COMPONENT_DEFAULTS[targetType] || {}
+  // Keep the title as the project name for hero
+  if (targetType === 'hero' && projectName) {
+    defaults.title = projectName
+  }
+  components[idx] = { type: targetType, props: { ...defaults } }
+  await updatePageComponents(itemId, components)
+  return components
+}
+
 export async function renameProject(projectId: string, newName: string): Promise<void> {
   const database = await db()
   await database.update(projects).set({

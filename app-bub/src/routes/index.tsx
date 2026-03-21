@@ -10,7 +10,7 @@ function Home() {
 
   if (user) {
     const hasProvider = Boolean(user.aiProvider && user.hasApiKey)
-    return <AuthChatLayout hasProvider={hasProvider} />
+    return <AuthChatLayout hasProvider={hasProvider} isAdmin={user.role === 'admin'} />
   }
 
   return (

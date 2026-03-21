@@ -11,6 +11,7 @@ interface ChatProps {
   chatStatus: 'ready' | 'saving' | 'failed'
   welcomeMessage?: string | null
   activeProjectId?: string | null
+  isAdmin?: boolean
 }
 
 interface Message {
@@ -21,7 +22,7 @@ interface Message {
   queued?: boolean
 }
 
-export default function Chat({ onNavigate, hasProvider, chatStatus, welcomeMessage, activeProjectId }: ChatProps) {
+export default function Chat({ onNavigate, hasProvider, chatStatus, welcomeMessage, activeProjectId, isAdmin }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [chatId, setChatId] = useState<string | null>(null)
   const [input, setInput] = useState('')
@@ -319,7 +320,7 @@ export default function Chat({ onNavigate, hasProvider, chatStatus, welcomeMessa
     >
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-300">Bub.ai</h2>
-        <AccountDropdown onNavigate={onNavigate} />
+        <AccountDropdown onNavigate={onNavigate} isAdmin={isAdmin} />
       </div>
       {renderBody()}
     </aside>

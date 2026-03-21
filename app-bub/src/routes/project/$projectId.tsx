@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { getCurrentUser } from '../../server/auth'
-import { getProject } from '../../server/projects'
+import { getProject, publishProject } from '../../server/projects'
 import AuthContentLayout from '../../components/AuthContentLayout'
 
 export const Route = createFileRoute('/project/$projectId')({
@@ -15,9 +15,29 @@ export const Route = createFileRoute('/project/$projectId')({
 
 type Tab = 'overview' | 'assets' | 'settings'
 
+function getTabFromHash(projectId: string): Tab {
+  if (typeof window === 'undefined') return 'overview'
+  const parentHash = window.parent !== window ? window.parent.location.hash : window.location.hash
+  const match = parentHash.match(new RegExp(`/project/${projectId}/(\\w+)`))
+  if (match && ['overview', 'assets', 'settings'].includes(match[1])) return match[1] as Tab
+  return 'overview'
+}
+
 function ProjectDetail() {
   const project = Route.useLoaderData()
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [activeTab, setActiveTab] = useState<Tab>(() => getTabFromHash(project.id))
+  const [publishing, setPublishing] = useState(false)
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(
+    project.status === 'published' ? `https://${project.slug}.bub.ai` : null
+  )
+
+  function handleTabChange(tab: Tab) {
+    setActiveTab(tab)
+    const path = tab === 'overview' ? `/project/${project.id}` : `/project/${project.id}/${tab}`
+    if (window.parent !== window) {
+      window.parent.location.hash = path
+    }
+  }
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -30,25 +50,47 @@ function ProjectDetail() {
       <div className="p-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-          <button
-            onClick={() => {
-              if (window.parent !== window) {
-                window.parent.location.hash = `/site/${project.id}`
-              } else {
-                window.location.href = `/site/${project.id}`
-              }
-            }}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors cursor-pointer"
-          >
-            View Site
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (window.parent !== window) {
+                  window.parent.location.hash = `/site/${project.id}`
+                } else {
+                  window.location.href = `/site/${project.id}`
+                }
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+            >
+              View Site
+            </button>
+            <button
+              disabled={publishing}
+              onClick={async () => {
+                setPublishing(true)
+                try {
+                  const result = await publishProject({ data: { projectId: project.id } })
+                  setPublishedUrl(result.url)
+                } catch {}
+                setPublishing(false)
+              }}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {publishing ? 'Publishing...' : publishedUrl ? 'Republish' : 'Publish Site'}
+            </button>
+          </div>
         </div>
+
+        {publishedUrl && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+            <span className="text-sm text-green-700">Live at <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="font-medium underline">{publishedUrl}</a></span>
+          </div>
+        )}
 
         <div className="flex gap-1 border-b border-gray-200 mb-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`cursor-pointer px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-600'

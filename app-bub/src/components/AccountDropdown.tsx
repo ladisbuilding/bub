@@ -5,15 +5,36 @@ import { signOut } from '../server/auth'
 
 interface AccountDropdownProps {
   onNavigate?: (src: string) => void
+  isAdmin?: boolean
 }
 
-export default function AccountDropdown({ onNavigate }: AccountDropdownProps) {
+export default function AccountDropdown({ onNavigate, isAdmin }: AccountDropdownProps) {
   const navigate = useNavigate()
 
   async function handleSignOut() {
     await signOut()
     navigate({ to: '/' })
   }
+
+  const items = [
+    {
+      label: 'Projects',
+      onClick: () => onNavigate ? onNavigate('/projects') : navigate({ to: '/projects' }),
+    },
+    {
+      label: 'Settings',
+      onClick: () => onNavigate ? onNavigate('/settings') : navigate({ to: '/settings' }),
+    },
+  ]
+
+  if (isAdmin) {
+    items.push({
+      label: 'Admin',
+      onClick: () => onNavigate ? onNavigate('/admin') : navigate({ to: '/admin' }),
+    })
+  }
+
+  items.push({ label: 'Sign out', onClick: handleSignOut })
 
   return (
     <DropdownMenu
@@ -23,17 +44,7 @@ export default function AccountDropdown({ onNavigate }: AccountDropdownProps) {
           <ChevronDown className="w-3.5 h-3.5" />
         </div>
       }
-      items={[
-        {
-          label: 'Projects',
-          onClick: () => onNavigate ? onNavigate('/projects') : navigate({ to: '/projects' }),
-        },
-        {
-          label: 'Settings',
-          onClick: () => onNavigate ? onNavigate('/settings') : navigate({ to: '/settings' }),
-        },
-        { label: 'Sign out', onClick: handleSignOut },
-      ]}
+      items={items}
     />
   )
 }

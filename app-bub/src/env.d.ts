@@ -1,6 +1,7 @@
 declare module 'cloudflare:workers' {
   const env: {
     DEV: string
+    ADMIN_EMAIL: string
     DEV_DATABASE_URL: string
     PROD_DATABASE_URL: string
     DEV_JWT_SECRET: string
