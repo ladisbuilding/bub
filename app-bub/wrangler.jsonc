@@ -23,6 +23,14 @@
 			"index_name": "bub-chat-summaries",
 			"remote": true
 		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "R2",
+			"bucket_name": "bub-file-store-dev",
+			"preview_bucket_name": "bub-file-store-dev",
+			"remote": true
+		}
 	]
 	/**
 	 * Smart Placement

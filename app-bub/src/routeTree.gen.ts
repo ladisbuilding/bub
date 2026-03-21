@@ -14,6 +14,8 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as CreateAccountRouteImport } from './routes/create-account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SiteSlugRouteImport } from './routes/site/$slug'
+import { Route as ProjectProjectIdRouteImport } from './routes/project/$projectId'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -40,6 +42,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SiteSlugRoute = SiteSlugRouteImport.update({
+  id: '/site/$slug',
+  path: '/site/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectProjectIdRoute = ProjectProjectIdRouteImport.update({
+  id: '/project/$projectId',
+  path: '/project/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +59,8 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
+  '/project/$projectId': typeof ProjectProjectIdRoute
+  '/site/$slug': typeof SiteSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +68,8 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
+  '/project/$projectId': typeof ProjectProjectIdRoute
+  '/site/$slug': typeof SiteSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +78,28 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
+  '/project/$projectId': typeof ProjectProjectIdRoute
+  '/site/$slug': typeof SiteSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/create-account' | '/projects' | '/settings' | '/sign-in'
+  fullPaths:
+    | '/'
+    | '/create-account'
+    | '/projects'
+    | '/settings'
+    | '/sign-in'
+    | '/project/$projectId'
+    | '/site/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/create-account' | '/projects' | '/settings' | '/sign-in'
+  to:
+    | '/'
+    | '/create-account'
+    | '/projects'
+    | '/settings'
+    | '/sign-in'
+    | '/project/$projectId'
+    | '/site/$slug'
   id:
     | '__root__'
     | '/'
@@ -75,6 +107,8 @@ export interface FileRouteTypes {
     | '/projects'
     | '/settings'
     | '/sign-in'
+    | '/project/$projectId'
+    | '/site/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +117,8 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRoute
   SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
+  ProjectProjectIdRoute: typeof ProjectProjectIdRoute
+  SiteSlugRoute: typeof SiteSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -122,6 +158,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/site/$slug': {
+      id: '/site/$slug'
+      path: '/site/$slug'
+      fullPath: '/site/$slug'
+      preLoaderRoute: typeof SiteSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/project/$projectId': {
+      id: '/project/$projectId'
+      path: '/project/$projectId'
+      fullPath: '/project/$projectId'
+      preLoaderRoute: typeof ProjectProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,6 +181,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRoute,
   SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,
+  ProjectProjectIdRoute: ProjectProjectIdRoute,
+  SiteSlugRoute: SiteSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

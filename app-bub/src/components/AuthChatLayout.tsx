@@ -48,9 +48,13 @@ export default function AuthChatLayout({ hasProvider: initialHasProvider }: Auth
     setContentSrc(path)
   }
 
+  // Extract active project ID from content URL
+  const projectIdMatch = contentSrc.match(/\/(project|site)\/([a-f0-9-]+)/)
+  const activeProjectId = projectIdMatch ? projectIdMatch[2] : null
+
   return (
     <div className="flex h-screen">
-      <Chat onNavigate={handleNavigate} hasProvider={hasProvider} chatStatus={chatStatus} welcomeMessage={welcomeMessage} />
+      <Chat onNavigate={handleNavigate} hasProvider={hasProvider} chatStatus={chatStatus} welcomeMessage={welcomeMessage} activeProjectId={activeProjectId} />
       {mounted && <Content src={contentSrc} />}
     </div>
   )
