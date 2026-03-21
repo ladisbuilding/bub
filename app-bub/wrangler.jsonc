@@ -27,7 +27,7 @@
 	"r2_buckets": [
 		{
 			"binding": "R2",
-			"bucket_name": "bub-file-store-dev",
+			"bucket_name": "bub-file-store-prod",
 			"preview_bucket_name": "bub-file-store-dev",
 			"remote": true
 		}
