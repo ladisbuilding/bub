@@ -1,6 +1,7 @@
 import { eq, and } from 'drizzle-orm'
 import { db } from '../db'
 import { items, itemTypes, projects } from '../db/schema'
+import { COMPONENT_DEFAULTS } from '../lib/component-config'
 
 interface Component {
   type: string
@@ -76,14 +77,6 @@ export async function removeComponent(projectId: string, targetType: string): Pr
 
   await updatePageComponents(itemId, filtered)
   return filtered
-}
-
-const COMPONENT_DEFAULTS: Record<string, Record<string, any>> = {
-  hero: { title: '', subtitle: '', buttonText: '', buttonUrl: '', buttonColor: '', style: {} },
-  'text-block': { heading: '', body: '', style: {} },
-  embed: { provider: '', url: '', style: {} },
-  cta: { title: '', subtitle: '', buttonText: '', buttonUrl: '', style: {} },
-  footer: { text: '', style: {} },
 }
 
 export async function resetComponent(projectId: string, targetType: string, projectName?: string): Promise<Component[]> {

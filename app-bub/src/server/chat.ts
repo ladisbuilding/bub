@@ -7,11 +7,7 @@ import { shouldRetrieveContext, retrieveContextInternal, generateSummaryInternal
 import { createProject } from './projects'
 import { detectIntent } from './intent'
 import { addComponent, editComponent, removeComponent, resetComponent, renameProject, getPageComponents } from './page-editor'
-
-interface Message {
-  role: 'system' | 'user' | 'assistant'
-  content: string
-}
+import { callLLM } from '../lib/llm-providers'
 
 const SYSTEM_PROMPT = `You are Bub, an AI assistant and website-building platform. Your sole purpose is to help people build digital tools — websites, apps, and online projects.
 
@@ -39,62 +35,6 @@ Behavior:
 - Never claim to have done something that hasn't actually happened.
 
 Stay focused on helping users build digital tools.`
-
-async function callClaude(apiKey: string, msgs: Message[], systemPrompt: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: msgs,
-    }),
-  })
-  if (!res.ok) throw new Error('Claude API error')
-  const data = await res.json() as any
-  return data.content[0].text
-}
-
-async function callOpenAI(apiKey: string, msgs: Message[], systemPrompt: string): Promise<string> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      max_tokens: 1024,
-      messages: [{ role: 'system', content: systemPrompt }, ...msgs],
-    }),
-  })
-  if (!res.ok) throw new Error('OpenAI API error')
-  const data = await res.json() as any
-  return data.choices[0].message.content
-}
-
-async function callOllamaCloud(apiKey: string, model: string, msgs: Message[], systemPrompt: string): Promise<string> {
-  const res = await fetch('https://api.ollama.com/api/chat', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'system', content: systemPrompt }, ...msgs],
-      stream: false,
-    }),
-  })
-  if (!res.ok) throw new Error('Ollama Cloud API error')
-  const data = await res.json() as any
-  return data.message.content
-}
 
 export const getOrCreateChat = createServerFn({ method: 'GET' })
   .handler(async () => {
@@ -232,18 +172,7 @@ export const sendMessage = createServerFn({ method: 'POST' })
 
     const [intentResult, llmResponse] = await Promise.all([
       detectIntent(latestMessage, projectNamesList, currentComponentTypes).catch(() => ({ action: 'none' as const })),
-      (async () => {
-        switch (user.aiProvider) {
-          case 'claude':
-            return callClaude(user.aiApiKey, messagesWithContext, fullSystemPrompt)
-          case 'openai':
-            return callOpenAI(user.aiApiKey, messagesWithContext, fullSystemPrompt)
-          case 'ollama-cloud':
-            return callOllamaCloud(user.aiApiKey, user.aiModel || 'minimax-m2.7:cloud', messagesWithContext, fullSystemPrompt)
-          default:
-            throw new Error('Unknown provider')
-        }
-      })(),
+      callLLM(user.aiProvider!, user.aiApiKey!, messagesWithContext, fullSystemPrompt, user.aiModel),
     ])
 
     let response = llmResponse

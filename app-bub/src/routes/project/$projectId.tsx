@@ -1,43 +1,28 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { getCurrentUser } from '../../server/auth'
 import { getProject, publishProject } from '../../server/projects'
+import { requireAuth } from '../../lib/auth-guards'
+import { useTabs } from '../../hooks/useTabs'
 import AuthContentLayout from '../../components/AuthContentLayout'
 
 export const Route = createFileRoute('/project/$projectId')({
-  beforeLoad: async () => {
-    const user = await getCurrentUser()
-    if (!user) throw redirect({ to: '/sign-in' })
-  },
+  beforeLoad: requireAuth,
   loader: ({ params }) => getProject({ data: { projectId: params.projectId } }),
   component: ProjectDetail,
 })
 
 type Tab = 'overview' | 'assets' | 'settings'
 
-function getTabFromHash(projectId: string): Tab {
-  if (typeof window === 'undefined') return 'overview'
-  const parentHash = window.parent !== window ? window.parent.location.hash : window.location.hash
-  const match = parentHash.match(new RegExp(`/project/${projectId}/(\\w+)`))
-  if (match && ['overview', 'assets', 'settings'].includes(match[1])) return match[1] as Tab
-  return 'overview'
-}
-
 function ProjectDetail() {
   const project = Route.useLoaderData()
-  const [activeTab, setActiveTab] = useState<Tab>(() => getTabFromHash(project.id))
+  const { activeTab, handleTabChange } = useTabs<Tab>('overview', `/project/${project.id}`, ['overview', 'assets', 'settings'])
   const [publishing, setPublishing] = useState(false)
+  const isDev = typeof window !== 'undefined' && window.location.hostname.includes('app-dev')
   const [publishedUrl, setPublishedUrl] = useState<string | null>(
-    project.status === 'published' ? `https://${project.slug}.bub.ai` : null
+    project.status === 'published'
+      ? isDev ? `https://app-dev.bub.ai/published/${project.slug}` : `https://${project.slug}.bub.ai`
+      : null
   )
-
-  function handleTabChange(tab: Tab) {
-    setActiveTab(tab)
-    const path = tab === 'overview' ? `/project/${project.id}` : `/project/${project.id}/${tab}`
-    if (window.parent !== window) {
-      window.parent.location.hash = path
-    }
-  }
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -113,9 +98,7 @@ function ProjectDetail() {
 function OverviewTab({ project }: { project: any }) {
   return (
     <div>
-      {project.description && (
-        <p className="text-gray-600 mb-4">{project.description}</p>
-      )}
+      {project.description && <p className="text-gray-600 mb-4">{project.description}</p>}
       <div className="grid grid-cols-2 gap-4">
         <div className="p-4 bg-gray-50 rounded-lg">
           <p className="text-sm text-gray-500">Status</p>
@@ -143,31 +126,15 @@ function SettingsTab({ project }: { project: any }) {
     <div className="space-y-4 max-w-md">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
-        <input
-          type="text"
-          defaultValue={project.name}
-          disabled
-          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900"
-        />
+        <input type="text" defaultValue={project.name} disabled className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900" />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <textarea
-          defaultValue={project.description || ''}
-          disabled
-          rows={3}
-          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 resize-none"
-        />
+        <textarea defaultValue={project.description || ''} disabled rows={3} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 resize-none" />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Custom Domain</label>
-        <input
-          type="text"
-          defaultValue={project.customDomain || ''}
-          disabled
-          placeholder="e.g. plantasia.com"
-          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400"
-        />
+        <input type="text" defaultValue={project.customDomain || ''} disabled placeholder="e.g. plantasia.com" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400" />
       </div>
       <p className="text-xs text-gray-400">To update these settings, ask Bub in the chat.</p>
     </div>

@@ -3,8 +3,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { eq } from 'drizzle-orm'
 import { renderComponent } from '../../components/SiteComponents'
 
-const getProjectSite = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: string }) => data)
+const getPublishedSite = createServerFn({ method: 'GET' })
+  .inputValidator((data: { slug: string }) => data)
   .handler(async ({ data }) => {
     const { db } = await import('../../db')
     const { projects } = await import('../../db/schema')
@@ -14,7 +14,7 @@ const getProjectSite = createServerFn({ method: 'GET' })
     const [project] = await database
       .select({ id: projects.id, name: projects.name })
       .from(projects)
-      .where(eq(projects.id, data.id))
+      .where(eq(projects.slug, data.slug))
 
     if (!project) return null
 
@@ -22,12 +22,12 @@ const getProjectSite = createServerFn({ method: 'GET' })
     return { name: project.name, components }
   })
 
-export const Route = createFileRoute('/site/$slug')({
-  loader: ({ params }) => getProjectSite({ data: { id: params.slug } }),
-  component: SitePreview,
+export const Route = createFileRoute('/published/$slug')({
+  loader: ({ params }) => getPublishedSite({ data: { slug: params.slug } }),
+  component: PublishedSite,
 })
 
-function SitePreview() {
+function PublishedSite() {
   const data = Route.useLoaderData()
 
   if (!data) {

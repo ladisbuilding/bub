@@ -3,6 +3,7 @@ import { eq, asc } from 'drizzle-orm'
 import { db } from '../db'
 import { chatSummaries, messages as messagesTable } from '../db/schema'
 import { requireAuth } from './auth-helpers'
+import { callBubLLM } from '../lib/llm-providers'
 
 const SUMMARY_PROMPT = `Summarize this conversation in 2-4 sentences. Include:
 - What the user was trying to build or accomplish
@@ -22,30 +23,6 @@ const PAST_CONTEXT_KEYWORDS = [
   'ago', 'we were', 'you mentioned', 'we did', 'we built',
   'we decided', 'we researched', 'we found',
 ]
-
-async function generateSummaryText(conversationText: string): Promise<string> {
-  const { env } = await import('cloudflare:workers')
-  const apiKey = (env as any).ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured')
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 256,
-      system: SUMMARY_PROMPT,
-      messages: [{ role: 'user', content: conversationText }],
-    }),
-  })
-  if (!res.ok) throw new Error(`Anthropic API error: ${res.status}`)
-  const data = await res.json() as any
-  return data.content[0].text
-}
 
 export function shouldRetrieveContext(message: string): boolean {
   const lower = message.toLowerCase()
@@ -78,7 +55,7 @@ export async function generateSummaryInternal(chatId: string, userId: string): P
     })
     .join('\n')
 
-  let summary = await generateSummaryText(conversationText)
+  let summary = await callBubLLM([{ role: 'user', content: conversationText }], SUMMARY_PROMPT)
 
   // Post-process: strip any code blocks the LLM snuck in
   summary = summary.replace(/```[\s\S]*?```/g, '').replace(/^#+\s.*$/gm, '').replace(/\n{3,}/g, '\n\n').trim()

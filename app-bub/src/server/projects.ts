@@ -153,28 +153,36 @@ export const publishProject = createServerFn({ method: 'POST' })
       updatedAt: new Date(),
     }).where(eq(projects.id, data.projectId))
 
-    // Set up custom domain via Cloudflare Workers API
-    try {
-      const { env } = await import('cloudflare:workers')
-      const cfToken = (env as any).CF_API_TOKEN
-      const cfAccountId = (env as any).CF_ACCOUNT_ID
-      if (cfToken && cfAccountId) {
-        await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/workers/domains`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${cfToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            hostname: `${project.slug}.bub.ai`,
-            service: 'app-bub',
-            environment: 'production',
-          }),
-        })
+    const { env } = await import('cloudflare:workers')
+    const isDev = (env as any).DEV === 'true'
+
+    // In prod, set up custom domain via Cloudflare Workers API
+    if (!isDev) {
+      try {
+        const cfToken = (env as any).CF_API_TOKEN
+        const cfAccountId = (env as any).CF_ACCOUNT_ID
+        if (cfToken && cfAccountId) {
+          await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/workers/domains`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${cfToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              hostname: `${project.slug}.bub.ai`,
+              service: 'app-bub',
+              environment: 'production',
+            }),
+          })
+        }
+      } catch {
+        // Domain setup failed — site is still published, just not on custom subdomain yet
       }
-    } catch {
-      // Domain setup failed — site is still published, just not on custom subdomain yet
     }
 
-    return { slug: project.slug, url: `https://${project.slug}.bub.ai` }
+    const url = isDev
+      ? `/published/${project.slug}`
+      : `https://${project.slug}.bub.ai`
+
+    return { slug: project.slug, url }
   })

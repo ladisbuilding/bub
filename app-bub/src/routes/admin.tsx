@@ -1,9 +1,10 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { eq } from 'drizzle-orm'
 import AuthContentLayout from '../components/AuthContentLayout'
-import { getCurrentUser } from '../server/auth'
+import { renderPreview } from '../components/SiteComponents'
+import { COMPONENT_REGISTRY } from '../lib/component-config'
+import { requireAdmin } from '../lib/auth-guards'
+import { useTabs } from '../hooks/useTabs'
 
 const getAdminStats = createServerFn({ method: 'GET' })
   .handler(async () => {
@@ -36,128 +37,16 @@ const getAdminStats = createServerFn({ method: 'GET' })
   })
 
 export const Route = createFileRoute('/admin')({
-  beforeLoad: async () => {
-    const user = await getCurrentUser()
-    if (!user || user.role !== 'admin') throw redirect({ to: '/' })
-  },
+  beforeLoad: requireAdmin,
   loader: () => getAdminStats(),
   component: Admin,
 })
 
-function ComponentPreview({ type, props }: { type: string; props: any }) {
-  const style = props.style || {}
-
-  switch (type) {
-    case 'hero':
-      return (
-        <div className="flex flex-col items-center justify-center text-center px-6" style={{ backgroundColor: style.bgColor || '#f3f4f6', color: style.textColor || '#000', minHeight: style.height || '33vh' }}>
-          <h1 className="text-3xl font-bold">{props.title}</h1>
-          {props.subtitle && <p className="text-lg mt-2 opacity-70">{props.subtitle}</p>}
-          {props.buttonText && (
-            <span className="inline-block mt-4 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium" style={props.buttonColor ? { backgroundColor: props.buttonColor } : undefined}>
-              {props.buttonText}
-            </span>
-          )}
-        </div>
-      )
-    case 'text-block':
-      return (
-        <div className="max-w-2xl mx-auto px-6 py-8" style={{ backgroundColor: style.bgColor, color: style.textColor }}>
-          {props.heading && <h2 className="text-2xl font-bold mb-3">{props.heading}</h2>}
-          {props.body && <p className="leading-relaxed text-gray-600">{props.body}</p>}
-        </div>
-      )
-    case 'embed':
-      return (
-        <div className="mx-auto px-6 py-6" style={{ maxWidth: '500px' }}>
-          <div className="bg-gray-100 rounded-lg flex items-center justify-center" style={{ height: '152px' }}>
-            <p className="text-sm text-gray-400">Spotify / YouTube embed</p>
-          </div>
-        </div>
-      )
-    case 'cta':
-      return (
-        <div className="text-center px-6 py-16" style={{ backgroundColor: style.bgColor || '#f3f4f6', color: style.textColor || '#000' }}>
-          <h2 className="text-2xl font-bold mb-1">{props.title}</h2>
-          {props.subtitle && <p className="mb-4 opacity-70">{props.subtitle}</p>}
-          {props.buttonText && <span className="inline-block px-5 py-2 bg-white/20 border border-current rounded-lg text-sm font-medium">{props.buttonText}</span>}
-        </div>
-      )
-    case 'footer':
-      return (
-        <footer className="text-center px-6 py-6 text-sm" style={{ backgroundColor: style.bgColor || '#1a1a1a', color: style.textColor || '#888' }}>
-          {props.text}
-        </footer>
-      )
-    default:
-      return <div className="p-4 text-gray-400 text-sm">Unknown component: {type}</div>
-  }
-}
-
 type Tab = 'overview' | 'users' | 'components'
-
-const COMPONENT_REGISTRY = [
-  {
-    type: 'hero',
-    name: 'Hero',
-    description: 'Full-height banner with title, subtitle, button, and background',
-    props: ['title', 'subtitle', 'buttonText', 'buttonUrl', 'buttonColor'],
-    style: ['bgColor', 'textColor', 'height'],
-    sample: { title: 'Welcome to My Site', subtitle: 'A beautiful place on the web', buttonText: 'Get Started', buttonUrl: '#' },
-  },
-  {
-    type: 'text-block',
-    name: 'Text Block',
-    description: 'Heading and body text section',
-    props: ['heading', 'body'],
-    style: ['bgColor', 'textColor'],
-    sample: { heading: 'About Us', body: 'We are a team of passionate builders creating tools for the modern web. Our mission is to make digital creation accessible to everyone.' },
-  },
-  {
-    type: 'embed',
-    name: 'Embed',
-    description: 'Spotify, YouTube, or any iframe embed',
-    props: ['provider', 'url'],
-    style: ['maxWidth'],
-    sample: { provider: 'spotify', url: 'https://open.spotify.com/embed/album/0rJhsNH02D3eo1ySHhAbKy' },
-  },
-  {
-    type: 'cta',
-    name: 'Call to Action',
-    description: 'Banner with title, subtitle, and action button',
-    props: ['title', 'subtitle', 'buttonText', 'buttonUrl'],
-    style: ['bgColor', 'textColor'],
-    sample: { title: 'Ready to get started?', subtitle: 'Join thousands of happy users today.', buttonText: 'Sign Up Free', buttonUrl: '#', style: { bgColor: '#3b82f6', textColor: '#ffffff' } },
-  },
-  {
-    type: 'footer',
-    name: 'Footer',
-    description: 'Site footer with text and links',
-    props: ['text'],
-    style: ['bgColor', 'textColor'],
-    sample: { text: '© 2026 My Site. All rights reserved.', style: { bgColor: '#111827', textColor: '#9ca3af' } },
-  },
-]
-
-function getTabFromHash(): Tab {
-  if (typeof window === 'undefined') return 'overview'
-  const parentHash = window.parent !== window ? window.parent.location.hash : window.location.hash
-  const match = parentHash.match(/\/admin\/(\w+)/)
-  if (match && ['overview', 'users', 'components'].includes(match[1])) return match[1] as Tab
-  return 'overview'
-}
 
 function Admin() {
   const { counts, recentUsers } = Route.useLoaderData()
-  const [activeTab, setActiveTab] = useState<Tab>(getTabFromHash)
-
-  function handleTabChange(tab: Tab) {
-    setActiveTab(tab)
-    const path = tab === 'overview' ? '/admin' : `/admin/${tab}`
-    if (window.parent !== window) {
-      window.parent.location.hash = path
-    }
-  }
+  const { activeTab, handleTabChange } = useTabs<Tab>('overview', '/admin', ['overview', 'users', 'components'])
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -215,7 +104,7 @@ function Admin() {
                   </div>
                 </div>
                 <div className="bg-white">
-                  <ComponentPreview type={comp.type} props={comp.sample} />
+                  {renderPreview({ type: comp.type, props: comp.sample }, 0)}
                 </div>
               </div>
             ))}

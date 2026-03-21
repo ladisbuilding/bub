@@ -16,6 +16,7 @@ import { Route as CreateAccountRouteImport } from './routes/create-account'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SiteSlugRouteImport } from './routes/site/$slug'
+import { Route as PublishedSlugRouteImport } from './routes/published/$slug'
 import { Route as ProjectProjectIdRouteImport } from './routes/project/$projectId'
 
 const SignInRoute = SignInRouteImport.update({
@@ -53,6 +54,11 @@ const SiteSlugRoute = SiteSlugRouteImport.update({
   path: '/site/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublishedSlugRoute = PublishedSlugRouteImport.update({
+  id: '/published/$slug',
+  path: '/published/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectProjectIdRoute = ProjectProjectIdRouteImport.update({
   id: '/project/$projectId',
   path: '/project/$projectId',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/published/$slug': typeof PublishedSlugRoute
   '/site/$slug': typeof SiteSlugRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/published/$slug': typeof PublishedSlugRoute
   '/site/$slug': typeof SiteSlugRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/published/$slug': typeof PublishedSlugRoute
   '/site/$slug': typeof SiteSlugRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sign-in'
     | '/project/$projectId'
+    | '/published/$slug'
     | '/site/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sign-in'
     | '/project/$projectId'
+    | '/published/$slug'
     | '/site/$slug'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sign-in'
     | '/project/$projectId'
+    | '/published/$slug'
     | '/site/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
   ProjectProjectIdRoute: typeof ProjectProjectIdRoute
+  PublishedSlugRoute: typeof PublishedSlugRoute
   SiteSlugRoute: typeof SiteSlugRoute
 }
 
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SiteSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/published/$slug': {
+      id: '/published/$slug'
+      path: '/published/$slug'
+      fullPath: '/published/$slug'
+      preLoaderRoute: typeof PublishedSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/project/$projectId': {
       id: '/project/$projectId'
       path: '/project/$projectId'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,
   ProjectProjectIdRoute: ProjectProjectIdRoute,
+  PublishedSlugRoute: PublishedSlugRoute,
   SiteSlugRoute: SiteSlugRoute,
 }
 export const routeTree = rootRouteImport

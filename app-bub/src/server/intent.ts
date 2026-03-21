@@ -1,3 +1,5 @@
+import { callBubLLM } from '../lib/llm-providers'
+
 export interface IntentResult {
   action: 'none' | 'create_project' | 'navigate_site' | 'navigate_project' | 'rename_project' | 'add_component' | 'edit_component' | 'remove_component' | 'reset_component'
   projectName?: string
@@ -9,34 +11,7 @@ export interface IntentResult {
   changes?: Record<string, any>
 }
 
-export async function detectIntent(
-  message: string,
-  projectNames: string[],
-  currentComponents?: string[],
-): Promise<IntentResult> {
-  const { env } = await import('cloudflare:workers')
-  const apiKey = (env as any).ANTHROPIC_API_KEY
-  if (!apiKey) return { action: 'none' }
-
-  const projectList = projectNames.length > 0
-    ? `User's existing projects: ${projectNames.join(', ')}`
-    : 'User has no projects yet.'
-
-  const componentList = currentComponents && currentComponents.length > 0
-    ? `Current page components: ${currentComponents.join(', ')}`
-    : ''
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
-      system: `You are an intent classifier. Given a user message, determine the intent. Respond with ONLY a JSON object, nothing else.
+const INTENT_PROMPT = `You are an intent classifier. Given a user message, determine the intent. Respond with ONLY a JSON object, nothing else.
 
 Possible intents:
 - {"action":"create_project","projectName":"...","projectDescription":"..."} — user wants to create/build/make a new website, app, or project
@@ -56,9 +31,6 @@ Available component types for add_component:
 - cta: title, subtitle, buttonText, buttonUrl, style
 - footer: text, style
 
-${projectList}
-${componentList}
-
 Rules:
 - Only return create_project if user is clearly asking to CREATE something new
 - "show me the site", "let me see it", "open it", "preview" → navigate_site
@@ -70,23 +42,40 @@ Rules:
 - "reset the hero", "reset hero to defaults" → reset_component
 - For add_component, infer componentType and reasonable default props
 - For edit_component, identify which component and what changes
-- If unsure, return {"action":"none"}`,
-      messages: [{ role: 'user', content: message }],
-    }),
-  })
+- If unsure, return {"action":"none"}`
 
-  if (!res.ok) return { action: 'none' }
+export async function detectIntent(
+  message: string,
+  projectNames: string[],
+  currentComponents?: string[],
+): Promise<IntentResult> {
+  const projectList = projectNames.length > 0
+    ? `User's existing projects: ${projectNames.join(', ')}`
+    : 'User has no projects yet.'
 
-  const data = await res.json() as any
-  const text = data.content[0].text.trim()
+  const componentList = currentComponents && currentComponents.length > 0
+    ? `Current page components: ${currentComponents.join(', ')}`
+    : ''
+
+  const systemPrompt = `${INTENT_PROMPT}\n\n${projectList}\n${componentList}`
 
   try {
-    return JSON.parse(text)
-  } catch {
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      try { return JSON.parse(jsonMatch[0]) } catch {}
+    const text = await callBubLLM(
+      [{ role: 'user', content: message }],
+      systemPrompt,
+      200,
+    )
+
+    try {
+      return JSON.parse(text.trim())
+    } catch {
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        try { return JSON.parse(jsonMatch[0]) } catch {}
+      }
     }
+  } catch {
+    // Intent detection failure shouldn't block chat
   }
 
   return { action: 'none' }

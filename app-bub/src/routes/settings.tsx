@@ -1,18 +1,15 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { getCurrentUser } from '../server/auth'
 import { getSettings, updateSettings } from '../server/settings'
 import { validateApiKey } from '../server/validate-key'
+import { requireAuth } from '../lib/auth-guards'
 import AuthContentLayout from '../components/AuthContentLayout'
 import Input from '../components/Input'
 import Select from '../components/Select'
 import Button from '../components/Button'
 
 export const Route = createFileRoute('/settings')({
-  beforeLoad: async () => {
-    const user = await getCurrentUser()
-    if (!user) throw redirect({ to: '/sign-in' })
-  },
+  beforeLoad: requireAuth,
   loader: () => getSettings(),
   component: Settings,
 })

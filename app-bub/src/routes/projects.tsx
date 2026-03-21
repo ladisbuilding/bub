@@ -1,14 +1,10 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { getCurrentUser } from '../server/auth'
+import { createFileRoute } from '@tanstack/react-router'
 import { getProjects } from '../server/projects'
+import { requireAuth } from '../lib/auth-guards'
 import AuthContentLayout from '../components/AuthContentLayout'
 
 export const Route = createFileRoute('/projects')({
-  beforeLoad: async () => {
-    const user = await getCurrentUser()
-    if (!user) throw redirect({ to: '/sign-in' })
-    return { user }
-  },
+  beforeLoad: requireAuth,
   loader: () => getProjects(),
   component: Projects,
 })
