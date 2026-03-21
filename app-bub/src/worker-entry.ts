@@ -7,14 +7,20 @@ export default {
     const url = new URL(request.url)
     const hostname = url.hostname
 
-    // Check if this is a published site subdomain (not app.bub.ai or app-dev.bub.ai)
-    if (hostname.endsWith('.bub.ai') && !hostname.startsWith('app') && !hostname.startsWith('www')) {
+    // Published site subdomain: {slug}.bub.ai (not app/www/domain)
+    if (hostname.endsWith('.bub.ai') && !hostname.startsWith('app') && !hostname.startsWith('www') && !hostname.startsWith('domain')) {
       const slug = hostname.replace('.bub.ai', '')
       const { renderPublishedSite } = await import('./server/site-renderer')
       return renderPublishedSite(slug)
     }
 
-    // Otherwise, pass to TanStack Start
+    // Custom domain: any hostname that's not *.bub.ai
+    if (!hostname.endsWith('.bub.ai') && !hostname.endsWith('.workers.dev') && hostname !== 'localhost') {
+      const { renderCustomDomainSite } = await import('./server/site-renderer')
+      return renderCustomDomainSite(hostname)
+    }
+
+    // Dashboard: app.bub.ai, app-dev.bub.ai, localhost
     return tanstackHandler(request, env, ctx)
   },
 }

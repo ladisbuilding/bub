@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { getProject, publishProject } from '../../server/projects'
+import { addCustomDomain, removeCustomDomain } from '../../server/custom-domain'
 import { requireAuth } from '../../lib/auth-guards'
 import { useTabs } from '../../hooks/useTabs'
 import AuthContentLayout from '../../components/AuthContentLayout'
@@ -122,8 +123,41 @@ function AssetsTab() {
 }
 
 function SettingsTab({ project }: { project: any }) {
+  const [domain, setDomain] = useState(project.customDomain || '')
+  const [domainStatus, setDomainStatus] = useState<string | null>(project.customDomain ? 'active' : null)
+  const [domainError, setDomainError] = useState('')
+  const [domainLoading, setDomainLoading] = useState(false)
+
+  async function handleAddDomain() {
+    if (!domain.trim()) return
+    setDomainError('')
+    setDomainLoading(true)
+    try {
+      const result = await addCustomDomain({ data: { projectId: project.id, domain: domain.trim() } })
+      setDomainStatus(result.status)
+    } catch (err) {
+      setDomainError(err instanceof Error ? err.message : 'Failed to add domain')
+    } finally {
+      setDomainLoading(false)
+    }
+  }
+
+  async function handleRemoveDomain() {
+    setDomainError('')
+    setDomainLoading(true)
+    try {
+      await removeCustomDomain({ data: { projectId: project.id } })
+      setDomain('')
+      setDomainStatus(null)
+    } catch (err) {
+      setDomainError(err instanceof Error ? err.message : 'Failed to remove domain')
+    } finally {
+      setDomainLoading(false)
+    }
+  }
+
   return (
-    <div className="space-y-4 max-w-md">
+    <div className="space-y-6 max-w-md">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
         <input type="text" defaultValue={project.name} disabled className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900" />
@@ -132,11 +166,52 @@ function SettingsTab({ project }: { project: any }) {
         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
         <textarea defaultValue={project.description || ''} disabled rows={3} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 resize-none" />
       </div>
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Custom Domain</label>
-        <input type="text" defaultValue={project.customDomain || ''} disabled placeholder="e.g. plantasia.com" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400" />
+        {domainError && (
+          <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs">{domainError}</div>
+        )}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            disabled={!!domainStatus}
+            placeholder="e.g. plantasia.com"
+            className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 disabled:bg-gray-50"
+          />
+          {domainStatus ? (
+            <button
+              onClick={handleRemoveDomain}
+              disabled={domainLoading}
+              className="cursor-pointer px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Remove
+            </button>
+          ) : (
+            <button
+              onClick={handleAddDomain}
+              disabled={domainLoading || !domain.trim()}
+              className="cursor-pointer px-3 py-2 text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {domainLoading ? 'Adding...' : 'Add'}
+            </button>
+          )}
+        </div>
+        {domainStatus && (
+          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+            <p className="font-medium mb-1">DNS Setup Required</p>
+            <p>Add a CNAME record at your DNS provider:</p>
+            <div className="mt-1 p-2 bg-white rounded font-mono text-xs">
+              {domain} → CNAME → domain.bub.ai
+            </div>
+            <p className="mt-1 text-blue-500">SSL will be provisioned automatically once DNS propagates.</p>
+          </div>
+        )}
       </div>
-      <p className="text-xs text-gray-400">To update these settings, ask Bub in the chat.</p>
+
+      <p className="text-xs text-gray-400">To update name and description, ask Bub in the chat.</p>
     </div>
   )
 }

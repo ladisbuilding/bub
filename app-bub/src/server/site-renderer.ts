@@ -1,41 +1,50 @@
 import { eq, and } from 'drizzle-orm'
+import { transformEmbedUrl, getEmbedHeight } from '../lib/embed-utils'
 
-/**
- * Renders a published project site as static HTML.
- * Called from the custom worker entry when hostname matches {slug}.bub.ai
- */
-export async function renderPublishedSite(slug: string): Promise<Response> {
-  const { db } = await import('../db')
-  const { projects, items, itemTypes } = await import('../db/schema')
-  const database = await db()
+async function getProjectAndComponents(finder: () => Promise<any>): Promise<Response> {
+  const { getPageComponents } = await import('./page-editor')
 
-  const [project] = await database
-    .select({ id: projects.id, name: projects.name, status: projects.status })
-    .from(projects)
-    .where(eq(projects.slug, slug))
+  const project = await finder()
 
   if (!project || project.status !== 'published') {
     return new Response('Site not found', { status: 404 })
   }
 
-  const [pageType] = await database
-    .select({ id: itemTypes.id })
-    .from(itemTypes)
-    .where(and(eq(itemTypes.projectId, project.id), eq(itemTypes.slug, 'page')))
-
-  let components: any[] = []
-  if (pageType) {
-    const [homePage] = await database
-      .select({ data: items.data })
-      .from(items)
-      .where(and(eq(items.projectId, project.id), eq(items.itemTypeId, pageType.id), eq(items.slug, 'home')))
-    components = (homePage?.data as any)?.components || []
-  }
-
+  const { components } = await getPageComponents(project.id)
   const html = renderComponentsToHtml(project.name, components)
 
   return new Response(html, {
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  })
+}
+
+/** Renders a published site by project slug (for {slug}.bub.ai) */
+export async function renderPublishedSite(slug: string): Promise<Response> {
+  const { db } = await import('../db')
+  const { projects } = await import('../db/schema')
+
+  return getProjectAndComponents(async () => {
+    const database = await db()
+    const [project] = await database
+      .select({ id: projects.id, name: projects.name, status: projects.status })
+      .from(projects)
+      .where(eq(projects.slug, slug))
+    return project
+  })
+}
+
+/** Renders a published site by custom domain (for user's own domain) */
+export async function renderCustomDomainSite(hostname: string): Promise<Response> {
+  const { db } = await import('../db')
+  const { projects } = await import('../db/schema')
+
+  return getProjectAndComponents(async () => {
+    const database = await db()
+    const [project] = await database
+      .select({ id: projects.id, name: projects.name, status: projects.status })
+      .from(projects)
+      .where(eq(projects.customDomain, hostname))
+    return project
   })
 }
 
@@ -85,15 +94,8 @@ function renderComponent(c: any): string {
 </div>`
 
     case 'embed': {
-      let url = p.url || ''
-      if (p.provider === 'spotify' && url && !url.includes('/embed/')) {
-        url = url.replace('open.spotify.com/', 'open.spotify.com/embed/')
-      }
-      if (p.provider === 'youtube' && url) {
-        const m = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&]+)/)
-        if (m) url = `https://www.youtube.com/embed/${m[1]}`
-      }
-      const height = p.provider === 'spotify' ? '352px' : '315px'
+      const url = transformEmbedUrl(p.url || '', p.provider || '')
+      const height = getEmbedHeight(p.provider || '')
       return `<div style="max-width:${s.maxWidth || '600px'};margin:0 auto;padding:2rem 1.5rem">
   <iframe src="${esc(url)}" style="width:100%;height:${height};border:none;border-radius:0.75rem" allow="autoplay;clipboard-write;encrypted-media;fullscreen;picture-in-picture"></iframe>
 </div>`

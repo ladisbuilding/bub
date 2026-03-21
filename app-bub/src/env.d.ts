@@ -7,6 +7,9 @@ declare module 'cloudflare:workers' {
     DEV_JWT_SECRET: string
     PROD_JWT_SECRET: string
     ANTHROPIC_API_KEY: string
+    CF_ACCOUNT_ID: string
+    CF_API_TOKEN: string
+    CF_ZONE_ID: string
     AI: any
     VECTORIZE: any
     R2: any
