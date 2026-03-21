@@ -28,8 +28,7 @@
 		{
 			"binding": "R2",
 			"bucket_name": "bub-file-store-prod",
-			"preview_bucket_name": "bub-file-store-dev",
-			"remote": true
+			"preview_bucket_name": "bub-file-store-dev"
 		}
 	]
 	/**
